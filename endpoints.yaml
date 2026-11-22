@@ -1,0 +1,482 @@
+
+openapi: 3.0.3
+info:
+  title: LinguArena API
+  version: 2.0.0
+  description: |
+    API RESTful de **LinguArena**, app web y móvil para aprender un idioma avanzando
+    en una historia por capítulos. No hay competencia entre usuarios: el estudiante
+    progresa con XP, niveles, racha, insignias y desbloqueo de capítulos.
+  contact:
+    name: Equipo 2
+
+paths:
+  /auth/registro:
+    post:
+      tags: [Cuenta]
+      summary: Registrarse
+      description: Crea la cuenta e inicia sesión.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroRequest'
+      responses:
+        '201':
+          description: Usuario creado y sesión iniciada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/login:
+    post:
+      tags: [Cuenta]
+      summary: Iniciar sesión
+      description: Valida las credenciales.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Credenciales válidas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/refresh:
+    post:
+      tags: [Cuenta]
+      summary: Renovar el token de acceso
+      description: Entrega un token de acceso nuevo a partir del token de renovación. (RF-02)
+      operationId: renovarToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Nuevos tokens emitidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tokens'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+
+  /auth/logout:
+    post:
+      tags: [Cuenta]
+      summary: Cerrar sesión
+      description: Invalida el token de renovación del dispositivo actual.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '204':
+          description: Sesión cerrada.
+
+  /usuarios/me:
+    get:
+      tags: [Cuenta]
+      summary: Ver mi perfil
+      description: |
+        Devuelve el perfil del usuario autenticado. 
+      operationId: obtenerMiPerfil
+      responses:
+        '200':
+          description: Perfil del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerfilUsuario'
+
+    patch:
+      tags: [Cuenta]
+      summary: Editar mi perfil
+      description: Actualiza los campos enviados. 
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarPerfilRequest'
+      responses:
+        '200':
+          description: Perfil actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerfilUsuario'
+
+  /notificaciones:
+    get:
+      tags: [Cuenta]
+      summary: Ver mis notificaciones
+      description: Lista las notificaciones del usuario en orden .
+      parameters:
+        - name: leida
+          in: query
+          required: false
+          description: Filtra por leídas o no leídas. Omitir = todas
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Pagina'
+        - $ref: '#/components/parameters/Limite'
+      responses:
+        '200':
+          description: Notificaciones del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaNotificaciones'
+  /notificaciones/{notificacionId}:
+    patch:
+      tags: [Cuenta]
+      summary: Marcar una notificación como leída o no leída
+      description: Solo el dueño de la notificación puede cambiarla.
+      parameters:
+        - $ref: '#/components/parameters/NotificacionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarNotificacionRequest'
+      responses:
+        '200':
+          description: Notificación actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notificacion'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+    
+
+
+components:
+  parameters: 
+    Pagina:
+      name: pagina
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Limite:
+      name: limite
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    NotificacionId:
+      name: notificacionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    NoEncontrado:
+      description: El recurso no existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: NO_ENCONTRADO
+            mensaje: Recurso no encontrado.
+  schemas:
+
+    Error:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo:
+          type: string
+          example: VALIDACION
+        mensaje:
+          type: string
+          example: Uno o más campos son inválidos.
+        detalles:
+          type: array
+          items:
+            type: object
+            properties:
+              campo:
+                type: string
+              mensaje:
+                type: string
+
+    Paginacion:
+      type: object
+      required: [pagina, limite, total, totalPaginas]
+      properties:
+        pagina:
+          type: integer
+          example: 1
+        limite:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 57
+        totalPaginas:
+          type: integer
+          example: 3
+
+    Rol:
+      type: string
+      enum: [estudiante, docente, administrador]
+
+    NivelMCER:
+      type: string
+      description: Nivel del Marco Común Europeo de Referencia.
+      enum: [A1, A2, B1, B2, C1, C2]     
+
+    RegistroRequest:
+      type: object
+      required: [nombre, correo, contrasena, rol]
+      properties:
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 80
+          example: Ana López
+        correo:
+          type: string
+          format: email
+          example: ana@unitec.edu
+        contrasena:
+          type: string
+          format: password
+          minLength: 8
+        rol:
+          type: string
+          description: El rol `administrador` no se puede elegir al registrarse.
+          enum: [estudiante, docente]
+          default: estudiante
+        institucion:
+          type: string
+          description: Solo para docentes.
+          example: UNITEC
+
+    LoginRequest:
+      type: object
+      required: [correo, contrasena]
+      properties:
+        correo:
+          type: string
+          format: email
+        contrasena:
+          type: string
+          format: password
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    Tokens:
+      type: object
+      required: [accessToken, refreshToken, tipo, expiraEn]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tipo:
+          type: string
+          example: Bearer
+        expiraEn:
+          type: integer
+          description: Segundos hasta que expira el token de acceso.
+          example: 3600
+
+    AuthResponse:
+      type: object
+      required: [usuario, tokens]
+      properties:
+        usuario:
+          $ref: '#/components/schemas/PerfilUsuario'
+        tokens:
+          $ref: '#/components/schemas/Tokens'
+
+    TipoNotificacion:
+      type: string
+      enum:
+        - racha_en_riesgo
+        - asignacion_nueva
+        - asignacion_por_vencer
+        - capitulo_desbloqueado
+        - insignia_obtenida
+    Usuario:
+      type: object
+      description: Clase base abstracta. Nunca se devuelve sola; siempre como Estudiante, Docente o Administrador.
+      required: [id, nombre, correo, rol, fechaRegistro]
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+          example: Ana López
+        correo:
+          type: string
+          format: email
+          example: ana@unitec.edu
+        rol:
+          $ref: '#/components/schemas/Rol'
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+        fechaRegistro:
+          type: string
+          format: date-time
+          
+    Estudiante:
+      allOf:
+        - $ref: '#/components/schemas/Usuario'
+        - type: object
+          required: [xp, nivelJugador, monedas, rachaActual, mejorRacha, escudos]
+          properties:
+            nivelMCER:
+              allOf:
+                - $ref: '#/components/schemas/NivelMCER'
+              nullable: true
+              description: Nulo hasta completar la prueba de nivel.
+            xp:
+              type: integer
+              minimum: 0
+              example: 1250
+            nivelJugador:
+              type: integer
+              minimum: 1
+              example: 6
+            monedas:
+              type: integer
+              minimum: 0
+              example: 180
+            rachaActual:
+              type: integer
+              minimum: 0
+              example: 4
+            mejorRacha:
+              type: integer
+              minimum: 0
+              example: 12
+            ultimoDiaActivo:
+              type: string
+              format: date
+              nullable: true
+            escudos:
+              type: integer
+              minimum: 0
+              description: Escudos de racha disponibles.
+              example: 1
+
+    Docente:
+      allOf:
+        - $ref: '#/components/schemas/Usuario'
+        - type: object
+          properties:
+            institucion:
+              type: string
+              nullable: true
+              example: UNITEC
+    Administrador:
+      allOf:
+        - $ref: '#/components/schemas/Usuario'
+    PerfilUsuario:
+      description: Perfil según el rol del usuario.
+      oneOf:
+        - $ref: '#/components/schemas/Estudiante'
+        - $ref: '#/components/schemas/Docente'
+        - $ref: '#/components/schemas/Administrador'
+      discriminator:
+        propertyName: rol
+        mapping:
+          estudiante: '#/components/schemas/Estudiante'
+          docente: '#/components/schemas/Docente'
+          administrador: '#/components/schemas/Administrador'
+    ActualizarPerfilRequest:
+      type: object
+      minProperties: 1
+      properties:
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 80
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+        institucion:
+          type: string
+          description: Solo para docentes.
+
+    Notificacion:
+      type: object
+      required: [id, tipo, titulo, leida, creadaEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tipo:
+          $ref: '#/components/schemas/TipoNotificacion'
+        titulo:
+          type: string
+          example: Tu racha está en riesgo
+        mensaje:
+          type: string
+          example: Completa una actividad hoy para no perder tu racha de 4 días.
+        datos:
+          type: object
+          description: Referencias al recurso relacionado (por ejemplo, el capítulo o la asignación).
+          additionalProperties: true
+          example:
+            capituloId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        leida:
+          type: boolean
+          example: false
+        creadaEn:
+          type: string
+          format: date-time
+    ListaNotificaciones:
+      type: object
+      required: [datos, noLeidas, paginacion]
+      properties:
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notificacion'
+        noLeidas:
+          type: integer
+          example: 3
+        paginacion:
+          $ref: '#/components/schemas/Paginacion'
+    ActualizarNotificacionRequest:
+      type: object
+      required: [leida]
+      properties:
+        leida:
+          type: boolean
