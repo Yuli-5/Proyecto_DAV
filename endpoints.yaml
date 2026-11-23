@@ -28,7 +28,7 @@ tags:
 - name: Contenido
   description: Carga y publicación de contenido (administrador).
 - name: Grupos
-description: Grupos de clase, codigos de invitacion, asignaciones y progreso para el docente.
+  description: Grupos de clase, codigos de invitacion, asignaciones y progreso para el docente.
 paths:
   /auth/registro:
     post:
@@ -108,6 +108,51 @@ paths:
       responses:
         '204':
           description: Sesión cerrada.
+  /auth/recuperar-contrasena:
+    post:
+      tags:
+      - Cuenta
+      summary: Pedir un enlace para recuperar la contraseña
+      description: Envía al correo un enlace con un token de un solo uso y con vencimiento. Siempre
+        responde 202, exista o no la cuenta, para no revelar qué correos están registrados.
+      operationId: solicitarRecuperacionContrasena
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecuperarContrasenaRequest'
+      responses:
+        '202':
+          description: Solicitud recibida.
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+  /auth/restablecer-contrasena:
+    post:
+      tags:
+      - Cuenta
+      summary: Restablecer la contraseña con el token del correo
+      description: Cambia la contraseña y cierra todas las sesiones abiertas del usuario.
+      operationId: restablecerContrasena
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestablecerContrasenaRequest'
+      responses:
+        '204':
+          description: Contraseña restablecida.
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          description: El token de recuperación no existe, ya se usó o venció.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /usuarios/me:
     get:
       tags:
@@ -140,6 +185,71 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PerfilUsuario'
+  /usuarios/me/contrasena:
+    put:
+      tags:
+      - Cuenta
+      summary: Cambiar mi contraseña
+      description: Pide la contraseña actual y la reemplaza por la nueva. Cierra las sesiones de los
+        demás dispositivos.
+      operationId: cambiarContrasena
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CambiarContrasenaRequest'
+      responses:
+        '204':
+          description: Contraseña actualizada.
+        '400':
+          description: Datos inválidos o la contraseña actual no coincide.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+  /usuarios/me/preferencias:
+    get:
+      tags:
+      - Cuenta
+      summary: Ver mis preferencias de notificación
+      description: Devuelve el recordatorio diario y los tipos de notificación desactivados.
+      operationId: obtenerMisPreferencias
+      responses:
+        '200':
+          description: Preferencias del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferenciasNotificacion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+    patch:
+      tags:
+      - Cuenta
+      summary: Editar mis preferencias de notificación
+      description: Actualiza solo los campos enviados. El recordatorio diario avisa antes de que el
+        estudiante pierda su racha.
+      operationId: actualizarMisPreferencias
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarPreferenciasRequest'
+      responses:
+        '200':
+          description: Preferencias actualizadas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferenciasNotificacion'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
   /notificaciones:
     get:
       tags:
@@ -162,6 +272,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListaNotificaciones'
+  /notificaciones/leer-todas:
+    post:
+      tags:
+      - Cuenta
+      summary: Marcar todas mis notificaciones como leídas
+      description: Marca como leídas todas las notificaciones no leídas del usuario.
+      operationId: marcarTodasLeidas
+      responses:
+        '204':
+          description: Todas las notificaciones quedaron leídas.
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+  /notificaciones/dispositivos:
+    post:
+      tags:
+      - Cuenta
+      summary: Registrar el dispositivo para notificaciones push
+      description: La app móvil envía su token de push al iniciar sesión. Si el token ya estaba
+        registrado, solo se actualiza.
+      operationId: registrarDispositivo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarDispositivoRequest'
+      responses:
+        '204':
+          description: Dispositivo registrado.
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
   /notificaciones/{notificacionId}:
     patch:
       tags:
@@ -1397,6 +1540,96 @@ components:
       properties:
         leida:
           type: boolean
+    RecuperarContrasenaRequest:
+      type: object
+      required:
+      - correo
+      properties:
+        correo:
+          type: string
+          format: email
+    RestablecerContrasenaRequest:
+      type: object
+      required:
+      - token
+      - nuevaContrasena
+      properties:
+        token:
+          type: string
+          description: Token de un solo uso que llegó en el enlace del correo.
+        nuevaContrasena:
+          type: string
+          format: password
+          minLength: 8
+    CambiarContrasenaRequest:
+      type: object
+      required:
+      - contrasenaActual
+      - nuevaContrasena
+      properties:
+        contrasenaActual:
+          type: string
+          format: password
+        nuevaContrasena:
+          type: string
+          format: password
+          minLength: 8
+          description: Debe ser distinta de la actual.
+    RecordatorioDiario:
+      type: object
+      required:
+      - activo
+      properties:
+        activo:
+          type: boolean
+        hora:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          description: Hora local del recordatorio, en formato HH:mm.
+    PreferenciasNotificacion:
+      type: object
+      description: Preferencias de notificación del usuario.
+      required:
+      - recordatorioDiario
+      - tiposDesactivados
+      properties:
+        recordatorioDiario:
+          $ref: '#/components/schemas/RecordatorioDiario'
+        zonaHoraria:
+          type: string
+          description: Zona horaria IANA para enviar el recordatorio a la hora local.
+        tiposDesactivados:
+          type: array
+          description: Tipos de notificación que el usuario no quiere recibir.
+          items:
+            $ref: '#/components/schemas/TipoNotificacion'
+    ActualizarPreferenciasRequest:
+      type: object
+      minProperties: 1
+      properties:
+        recordatorioDiario:
+          $ref: '#/components/schemas/RecordatorioDiario'
+        zonaHoraria:
+          type: string
+        tiposDesactivados:
+          type: array
+          items:
+            $ref: '#/components/schemas/TipoNotificacion'
+    RegistrarDispositivoRequest:
+      type: object
+      required:
+      - token
+      - plataforma
+      properties:
+        token:
+          type: string
+          description: Token de notificaciones push del dispositivo (por ejemplo, de Firebase).
+        plataforma:
+          type: string
+          enum:
+          - android
+          - ios
+          - web
     EstadoCapitulo:
       type: string
       enum:
