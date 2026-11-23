@@ -9,6 +9,11 @@ info:
     progresa con XP, niveles, racha, insignias y desbloqueo de capítulos.
   contact:
     name: Equipo 2
+  tags:
+    - name: Cuenta
+      description: Registro, inicio de sesión, perfil y notificaciones.
+    - name: Capitulos
+      description: Actividades, pistas, recompensas, insignias, progreso y cierre de capitulos.
 
 paths:
   /auth/registro:
@@ -163,8 +168,223 @@ paths:
                 $ref: '#/components/schemas/Notificacion'
         '404':
           $ref: '#/components/responses/NoEncontrado'
-    
+  /usuarios/me/insignias:
+    get:
+      tags: [Capitulos]
+      summary: Ver mis insignias
+      description: Lista las insignias que obtuvo el usuario, de la más reciente a la más antigua.
+      operationId: listarMisInsignias
+      parameters:
+        -$ref: '#components/parameters/Pagina'
+        -$ref: '#components/parameters/Limite'
+      responses:
+        '200':
+        description: Insignias obtenidas.
+        content: 
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListaLogros'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/RolNoPermitido'
+  /capitulos/{capituloId}:
+    get:
+      tags: [Capitulos]
+      summary: Obtener escenas y actividades de un capítulo
+      description: Devuelve el capítulo con sus escenas en orden y las actividades. 
+                  Incluye el progreso del estudiante para saber qué escena retomar.
+      operationId: obtenerCapitulo
+      parameters:
+        - $ref: '#/components/parameters/CapituloId'
+      responses:
+        '200':
+          description: Capítulo listo para jugar.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapituloJuego'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/CapituloBloqueado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+  /capitulos/{capituloId}/inicio:
+    post:
+      tags: [Capitulos]
+      summary: Empezar o retomar un capítulo
+      description: |
+      - Si el capitulo está disponible o completado y se quiere repetir lo pasa a un estado
+        `en curso`. Si el curso esta en un estado `en curso`, no cambia nada y devuelve el progreso actual.
+      operationId: iniciarCapitulo
+      parameters:
+        - $ref: '#/components/parameters/CapituloId'
+      responses:
+        '200':
+          description: Capítulo retomado en la escena donde se quedó.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgresoCapitulo'
+        '201':
+          description: Capítulo iniciado (o reiniciado para repetirlo).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgresoCapitulo'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/CapituloBloqueado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
 
+  /capitulo/{capituloId}/finalizacion:
+    post:
+      tags: [Capitulos]
+      summary: Da por finalizado el capitulo (puntaje, estrellas, recompensas y desbloquea el siguiente capitulo)
+      description:
+        Calcula el puntaje y lo compara con el `puntajeMinimo`. Lo da por **Aprobado** o **No Aprobado**
+      operationId: finalizarCapitulo
+      parameters:
+        - $ref: '#/components/parameters/CapituloId'
+      responses:
+        '200':
+          description: Capítulo cerrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoFinalizacion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/CapituloBloqueado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: El capítulo no está en curso o faltan actividades por responder.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                incompleto:
+                  value:
+                    codigo: CAPITULO_INCOMPLETO
+                    mensaje: Faltan 2 actividades por responder.
+                noIniciado:
+                  value:
+                    codigo: CAPITULO_NO_INICIADO
+                    mensaje: Este capítulo no está en curso.
+
+
+/actividades/{actividadId}/intentos:
+    post:
+      tags: [Capitulos]
+      summary: Responder una actividad y recibir corrección y XP
+      description:
+        Registra un `IntentoActividad`, lo corrige al instante y devuelve la
+        respuesta correcta y la explicación.
+      operationId: responderActividad
+      parameters:
+        - $ref: '#/components/parameters/ActividadId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NuevoIntento'
+            examples:
+              opcionUnica:
+                summary: Vocabulario / comprensión / escucha
+                value:
+                  respuesta: b
+              textoLibre:
+                summary: Escucha (escribir) / escritura corta
+                value:
+                  respuesta: I would like a coffee
+              emparejar:
+                summary: Emparejar u ordenar
+                value:
+                  respuesta: [apple-manzana, dog-perro, house-casa]
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NuevoIntentoPronunciacion'
+      responses:
+        '201':
+          description: Intento registrado y corregido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoIntento'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/CapituloBloqueado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: El capítulo de esta actividad no está `en_curso`; hay que llamar a `/inicio` primero.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                codigo: CAPITULO_NO_INICIADO
+                mensaje: Inicia el capítulo antes de responder sus actividades.
+        '502':
+          description: El Servicio de voz no respondió (solo pronunciación).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                codigo: SERVICIO_VOZ_NO_DISPONIBLE
+                mensaje: No pudimos calificar tu pronunciación. Intenta de nuevo.
+
+/actividades/{actividadId}/pista:
+    post:
+      tags: [Capitulos]
+      summary: Pedir una pista (descuenta monedas)
+      description:
+        Descuenta `costoPista` monedas y devuelve la pista.
+      operationId: pedirPista
+      parameters:
+        - $ref: '#/components/parameters/ActividadId'
+      responses:
+        '200':
+          description: Pista entregada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PistaEntregada'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/CapituloBloqueado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: Saldo insuficiente o capítulo no iniciado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                saldo:
+                  value:
+                    codigo: SALDO_INSUFICIENTE
+                    mensaje: No tienes monedas suficientes para esta pista.
+                    detalles:
+                      - campo: monedas
+                        mensaje: Tienes 2 monedas y la pista cuesta 5.
+                noIniciado:
+                  value:
+                    codigo: CAPITULO_NO_INICIADO
+                    mensaje: Inicia el capítulo antes de pedir pistas.
 
 components:
   parameters: 
@@ -192,6 +412,21 @@ components:
       schema:
         type: string
         format: uuid
+    CapituloId:
+      name: capituloId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ActividadId:
+      name: actividadId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
   responses:
     NoEncontrado:
       description: El recurso no existe.
@@ -202,6 +437,51 @@ components:
           example:
             codigo: NO_ENCONTRADO
             mensaje: Recurso no encontrado.
+    SolicitudInvalida:
+      description: El cuerpo o los parámetros no tienen el formato esperado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: VALIDACION
+            mensaje: Uno o más campos son inválidos.
+            detalles:
+              - campo: respuesta
+                mensaje: Es obligatorio.
+    NoAutenticado:
+      description: Falta el token, es inválido o expiró.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: NO_AUTENTICADO
+            mensaje: Token ausente o expirado.
+    RolNoPermitido:
+      description: El rol del usuario no puede usar este recurso.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: ROL_NO_PERMITIDO
+            mensaje: Solo los estudiantes pueden usar este recurso.
+    CapituloBloqueado:
+      description: El capítulo sigue bloqueado (RN-01) o el rol no es estudiante.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            bloqueado:
+              value:
+                codigo: CAPITULO_BLOQUEADO
+                mensaje: Aprueba el capítulo anterior para desbloquear este.
+            rol:
+              value:
+                codigo: ROL_NO_PERMITIDO
+                mensaje: Solo los estudiantes pueden jugar capítulos.
   schemas:
 
     Error:
@@ -480,3 +760,387 @@ components:
       properties:
         leida:
           type: boolean
+
+    EstadoCapitulo:
+      type: string
+      enum: [bloqueado, disponible, en_curso, completado]
+
+    ProgresoCapitulo:
+      type: object
+      description: Une un Estudiante con un Capitulo.
+      required: [estudianteId, capituloId, estado]
+      properties:
+        estudianteId:
+          type: string
+          format: uuid
+        capituloId:
+          type: string
+          format: uuid
+        estado:
+          $ref: '#/components/schemas/EstadoCapitulo'
+        escenaActual:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: "`orden` de la escena donde retomar. Nulo si nunca se inició."
+          example: 3
+        puntaje:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Mejor % de aciertos en primeros intentos. Nulo si nunca se finalizó.
+        estrellas:
+          type: integer
+          minimum: 1
+          maximum: 3
+          nullable: true
+          description: Mejores estrellas obtenidas. Nulo si aún no se aprueba.
+        completadoEn:
+          type: string
+          format: date-time
+          nullable: true
+          description: Primera vez que se aprobó.
+
+    IntentoActividad:
+      type: object
+      description: Une un Estudiante con una Actividad.
+      required: [id, estudianteId, actividadId, respuesta, esCorrecta, usoPista, numeroIntento, fecha]
+      properties:
+        id:
+          type: string
+          format: uuid
+        estudianteId:
+          type: string
+          format: uuid
+        actividadId:
+          type: string
+          format: uuid
+        respuesta:
+          $ref: '#/components/schemas/Respuesta'
+        esCorrecta:
+          type: boolean
+        usoPista:
+          type: boolean
+        numeroIntento:
+          type: integer
+          minimum: 1
+          description: Se reinicia cada vez que el estudiante inicia o repite el capítulo.
+          example: 1
+        fecha:
+          type: string
+          format: date-time
+
+    Insignia:
+      type: object
+      required: [id, nombre, descripcion, criterio, iconoUrl]
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+          example: Constancia
+        descripcion:
+          type: string
+          example: Practica 7 días seguidos.
+        criterio:
+          type: string
+          description: Código de la regla que la otorga.
+          example: RACHA_7_DIAS
+        iconoUrl:
+          type: string
+          format: uri
+
+    LogroObtenido:
+      type: object
+      description: Une un Estudiante con una Insignia.
+      required: [estudianteId, insignia, fechaObtencion]
+      properties:
+        estudianteId:
+          type: string
+          format: uuid
+        insignia:
+          $ref: '#/components/schemas/Insignia'
+        fechaObtencion:
+          type: string
+          format: date-time
+
+    ListaLogros:
+      type: object
+      required: [datos, paginacion]
+      properties:
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogroObtenido'
+        paginacion:
+          $ref: '#/components/schemas/Paginacion'
+
+    TipoActividad:
+      type: string
+      enum: [vocabulario, comprension, escucha, escritura]
+
+    CapituloJuego:
+      type: object
+      required: [id, storylineId, numero, titulo, puntajeMinimo, escenas, progreso]
+      properties:
+        id:
+          type: string
+          format: uuid
+        storylineId:
+          type: string
+          format: uuid
+        numero:
+          type: integer
+          minimum: 1
+          example: 2
+        titulo:
+          type: string
+          example: La estación de tren
+        puntajeMinimo:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 60
+        escenas:
+          type: array
+          items:
+            $ref: '#/components/schemas/EscenaJuego'
+        progreso:
+          $ref: '#/components/schemas/ProgresoCapitulo'
+
+    EscenaJuego:
+      type: object
+      required: [id, orden, tipo, texto, actividades]
+      properties:
+        id:
+          type: string
+          format: uuid
+        orden:
+          type: integer
+          minimum: 1
+        tipo:
+          type: string
+          enum: [narracion, dialogo]
+        texto:
+          type: string
+        personajeId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Quién habla, en escenas de diálogo.
+        imagenUrl:
+          type: string
+          format: uri
+          nullable: true
+        audioUrl:
+          type: string
+          format: uri
+          nullable: true
+        actividades:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActividadJuego'
+
+    ActividadJuego:
+      type: object
+      description: Actividad tal como la ve el estudiante, sin respuestaCorrecta, explicacion ni pista.
+      required: [id, tipo, enunciado, costoPista, xp]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tipo:
+          $ref: '#/components/schemas/TipoActividad'
+        enunciado:
+          type: string
+          example: ¿Qué significa "apple"?
+        opciones:
+          type: array
+          nullable: true
+          description: Opciones para elegir, emparejar u ordenar. Nulo si la respuesta es texto libre o audio.
+          items:
+            type: object
+            required: [clave, texto]
+            properties:
+              clave:
+                type: string
+                example: b
+              texto:
+                type: string
+                example: manzana
+        audioUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Audio a escuchar (actividades de escucha).
+        costoPista:
+          type: integer
+          minimum: 0
+          example: 5
+        xp:
+          type: integer
+          minimum: 0
+          example: 10
+
+    Respuesta:
+      description: |
+        Texto o clave de opción (`string`) para elegir, escuchar o escribir;
+        lista ordenada (`array`) para emparejar u ordenar.
+      oneOf:
+        - type: string
+          maxLength: 500
+        - type: array
+          minItems: 1
+          items:
+            type: string
+
+    NuevoIntento:
+      type: object
+      required: [respuesta]
+      properties:
+        respuesta:
+          $ref: '#/components/schemas/Respuesta'
+
+    EstadoEstudiante:
+      type: object
+      description: Saldo de gamificación del estudiante después de la operación.
+      required: [xp, nivelJugador, monedas, rachaActual, mejorRacha, escudos]
+      properties:
+        xp:
+          type: integer
+          minimum: 0
+          example: 1260
+        nivelJugador:
+          type: integer
+          minimum: 1
+          example: 6
+        monedas:
+          type: integer
+          minimum: 0
+          example: 175
+        rachaActual:
+          type: integer
+          minimum: 0
+          example: 5
+        mejorRacha:
+          type: integer
+          minimum: 0
+          example: 12
+        escudos:
+          type: integer
+          minimum: 0
+          example: 1
+
+    ResultadoIntento:
+      type: object
+      required: [intento, respuestaCorrecta, explicacion, cuentaParaPuntaje, xpGanada, estudiante, escenaActual]
+      properties:
+        intento:
+          $ref: '#/components/schemas/IntentoActividad'
+        respuestaCorrecta:
+          $ref: '#/components/schemas/Respuesta'
+        explicacion:
+          type: string
+          example: '"Apple" significa "manzana".'
+        cuentaParaPuntaje:
+          type: boolean
+          description: Verdadero solo si es el primer intento.
+        xpGanada:
+          type: integer
+          minimum: 0
+          description: XP de la actividad; solo si `cuentaParaPuntaje` y `esCorrecta`.
+          example: 10
+        estudiante:
+          $ref: '#/components/schemas/EstadoEstudiante'
+        escenaActual:
+          type: integer
+          description: Escena guardada en el progreso tras este intento.
+          example: 3
+
+    PistaEntregada:
+      type: object
+      required: [actividadId, pista, costo, monedasRestantes, yaPedida]
+      properties:
+        actividadId:
+          type: string
+          format: uuid
+        pista:
+          type: string
+          example: Es una fruta roja o verde.
+        costo:
+          type: integer
+          minimum: 0
+          description: Monedas cobradas en esta llamada (0 si ya se había pedido).
+          example: 5
+        monedasRestantes:
+          type: integer
+          minimum: 0
+          example: 170
+        yaPedida:
+          type: boolean
+
+    ResultadoFinalizacion:
+      type: object
+      required: [progreso, aprobado, puntaje, recompensas, nivelJugador, estudiante, siguienteCapitulo, insigniasNuevas]
+      properties:
+        progreso:
+          $ref: '#/components/schemas/ProgresoCapitulo'
+        aprobado:
+          type: boolean
+        puntaje:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Puntaje de esta partida (el progreso guarda el mejor).
+          example: 85
+        estrellas:
+          type: integer
+          minimum: 1
+          maximum: 3
+          nullable: true
+          description: Estrellas de esta partida; nulo si no aprobó.
+          example: 2
+        recompensas:
+          type: object
+          required: [xp, monedas]
+          properties:
+            xp:
+              type: integer
+              minimum: 0
+              example: 50
+            monedas:
+              type: integer
+              minimum: 0
+              example: 15
+        nivelJugador:
+          type: object
+          required: [anterior, actual, subioNivel]
+          properties:
+            anterior:
+              type: integer
+              example: 6
+            actual:
+              type: integer
+              example: 7
+            subioNivel:
+              type: boolean
+        estudiante:
+          $ref: '#/components/schemas/EstadoEstudiante'
+        siguienteCapitulo:
+          type: object
+          nullable: true
+          description: Nulo si era el último capítulo de la storyline.
+          required: [capituloId, estado]
+          properties:
+            capituloId:
+              type: string
+              format: uuid
+            estado:
+              $ref: '#/components/schemas/EstadoCapitulo'
+        insigniasNuevas:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogroObtenido'
+ 
