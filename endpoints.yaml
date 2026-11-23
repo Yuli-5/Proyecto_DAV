@@ -1,24 +1,39 @@
-
 openapi: 3.0.3
 info:
   title: LinguArena API
   version: 2.0.0
-  description: |
-    API RESTful de **LinguArena**, app web y móvil para aprender un idioma avanzando
+  description: 'API RESTful de **LinguArena**, app web y móvil para aprender un idioma avanzando
+
     en una historia por capítulos. No hay competencia entre usuarios: el estudiante
+
     progresa con XP, niveles, racha, insignias y desbloqueo de capítulos.
+
+    '
   contact:
     name: Equipo 2
-  tags:
-    - name: Cuenta
-      description: Registro, inicio de sesión, perfil y notificaciones.
-    - name: Capitulos
-      description: Actividades, pistas, recompensas, insignias, progreso y cierre de capitulos.
-
+servers:
+- url: http://localhost:3000/api/v1
+  description: Desarrollo local
+security:
+- bearerAuth: []
+tags:
+- name: Cuenta
+  description: Registro, inicio de sesión, perfil y notificaciones.
+- name: Capitulos
+  description: Actividades, pistas, recompensas, insignias, progreso y cierre de capitulos.
+- name: Nivelación
+  description: Prueba de nivel inicial A1–C2.
+- name: Storylines
+  description: Catálogo de storylines y sus capítulos.
+- name: Contenido
+  description: Carga y publicación de contenido (administrador).
+- name: Grupos
+description: Grupos de clase, codigos de invitacion, asignaciones y progreso para el docente.
 paths:
   /auth/registro:
     post:
-      tags: [Cuenta]
+      tags:
+      - Cuenta
       summary: Registrarse
       description: Crea la cuenta e inicia sesión.
       requestBody:
@@ -36,7 +51,8 @@ paths:
                 $ref: '#/components/schemas/AuthResponse'
   /auth/login:
     post:
-      tags: [Cuenta]
+      tags:
+      - Cuenta
       summary: Iniciar sesión
       description: Valida las credenciales.
       requestBody:
@@ -54,7 +70,8 @@ paths:
                 $ref: '#/components/schemas/AuthResponse'
   /auth/refresh:
     post:
-      tags: [Cuenta]
+      tags:
+      - Cuenta
       summary: Renovar el token de acceso
       description: Entrega un token de acceso nuevo a partir del token de renovación. (RF-02)
       operationId: renovarToken
@@ -76,10 +93,10 @@ paths:
           $ref: '#/components/responses/SolicitudInvalida'
         '401':
           $ref: '#/components/responses/NoAutenticado'
-
   /auth/logout:
     post:
-      tags: [Cuenta]
+      tags:
+      - Cuenta
       summary: Cerrar sesión
       description: Invalida el token de renovación del dispositivo actual.
       requestBody:
@@ -91,13 +108,12 @@ paths:
       responses:
         '204':
           description: Sesión cerrada.
-
   /usuarios/me:
     get:
-      tags: [Cuenta]
+      tags:
+      - Cuenta
       summary: Ver mi perfil
-      description: |
-        Devuelve el perfil del usuario autenticado. 
+      description: "Devuelve el perfil del usuario autenticado. \n"
       operationId: obtenerMiPerfil
       responses:
         '200':
@@ -106,11 +122,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PerfilUsuario'
-
     patch:
-      tags: [Cuenta]
+      tags:
+      - Cuenta
       summary: Editar mi perfil
-      description: Actualiza los campos enviados. 
+      description: Actualiza los campos enviados.
       requestBody:
         required: true
         content:
@@ -124,21 +140,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PerfilUsuario'
-
   /notificaciones:
     get:
-      tags: [Cuenta]
+      tags:
+      - Cuenta
       summary: Ver mis notificaciones
       description: Lista las notificaciones del usuario en orden .
       parameters:
-        - name: leida
-          in: query
-          required: false
-          description: Filtra por leídas o no leídas. Omitir = todas
-          schema:
-            type: boolean
-        - $ref: '#/components/parameters/Pagina'
-        - $ref: '#/components/parameters/Limite'
+      - name: leida
+        in: query
+        required: false
+        description: Filtra por leídas o no leídas. Omitir = todas
+        schema:
+          type: boolean
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/Limite'
       responses:
         '200':
           description: Notificaciones del usuario.
@@ -148,11 +164,12 @@ paths:
                 $ref: '#/components/schemas/ListaNotificaciones'
   /notificaciones/{notificacionId}:
     patch:
-      tags: [Cuenta]
+      tags:
+      - Cuenta
       summary: Marcar una notificación como leída o no leída
       description: Solo el dueño de la notificación puede cambiarla.
       parameters:
-        - $ref: '#/components/parameters/NotificacionId'
+      - $ref: '#/components/parameters/NotificacionId'
       requestBody:
         required: true
         content:
@@ -170,33 +187,35 @@ paths:
           $ref: '#/components/responses/NoEncontrado'
   /usuarios/me/insignias:
     get:
-      tags: [Capitulos]
+      tags:
+      - Capitulos
       summary: Ver mis insignias
       description: Lista las insignias que obtuvo el usuario, de la más reciente a la más antigua.
       operationId: listarMisInsignias
       parameters:
-        -$ref: '#components/parameters/Pagina'
-        -$ref: '#components/parameters/Limite'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/Limite'
       responses:
         '200':
-        description: Insignias obtenidas.
-        content: 
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ListaLogros'
+          description: Insignias obtenidas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaLogros'
         '401':
           $ref: '#/components/responses/NoAutenticado'
         '403':
           $ref: '#/components/responses/RolNoPermitido'
   /capitulos/{capituloId}:
     get:
-      tags: [Capitulos]
+      tags:
+      - Capitulos
       summary: Obtener escenas y actividades de un capítulo
-      description: Devuelve el capítulo con sus escenas en orden y las actividades. 
-                  Incluye el progreso del estudiante para saber qué escena retomar.
+      description: Devuelve el capítulo con sus escenas en orden y las actividades. Incluye el progreso
+        del estudiante para saber qué escena retomar.
       operationId: obtenerCapitulo
       parameters:
-        - $ref: '#/components/parameters/CapituloId'
+      - $ref: '#/components/parameters/CapituloId'
       responses:
         '200':
           description: Capítulo listo para jugar.
@@ -212,14 +231,17 @@ paths:
           $ref: '#/components/responses/NoEncontrado'
   /capitulos/{capituloId}/inicio:
     post:
-      tags: [Capitulos]
+      tags:
+      - Capitulos
       summary: Empezar o retomar un capítulo
-      description: |
-      - Si el capitulo está disponible o completado y se quiere repetir lo pasa a un estado
-        `en curso`. Si el curso esta en un estado `en curso`, no cambia nada y devuelve el progreso actual.
+      description: 'Si el capítulo está disponible o completado y se quiere repetir, lo pasa al estado
+
+        `en_curso`. Si ya está `en_curso`, no cambia nada y devuelve el progreso actual.
+
+        '
       operationId: iniciarCapitulo
       parameters:
-        - $ref: '#/components/parameters/CapituloId'
+      - $ref: '#/components/parameters/CapituloId'
       responses:
         '200':
           description: Capítulo retomado en la escena donde se quedó.
@@ -239,16 +261,17 @@ paths:
           $ref: '#/components/responses/CapituloBloqueado'
         '404':
           $ref: '#/components/responses/NoEncontrado'
-
-  /capitulo/{capituloId}/finalizacion:
+  /capitulos/{capituloId}/finalizacion:
     post:
-      tags: [Capitulos]
-      summary: Da por finalizado el capitulo (puntaje, estrellas, recompensas y desbloquea el siguiente capitulo)
-      description:
-        Calcula el puntaje y lo compara con el `puntajeMinimo`. Lo da por **Aprobado** o **No Aprobado**
+      tags:
+      - Capitulos
+      summary: Da por finalizado el capitulo (puntaje, estrellas, recompensas y desbloquea el siguiente
+        capitulo)
+      description: Calcula el puntaje y lo compara con el `puntajeMinimo`. Lo da por **Aprobado** o **No
+        Aprobado**
       operationId: finalizarCapitulo
       parameters:
-        - $ref: '#/components/parameters/CapituloId'
+      - $ref: '#/components/parameters/CapituloId'
       responses:
         '200':
           description: Capítulo cerrado.
@@ -277,18 +300,16 @@ paths:
                   value:
                     codigo: CAPITULO_NO_INICIADO
                     mensaje: Este capítulo no está en curso.
-
-
-/actividades/{actividadId}/intentos:
+  /actividades/{actividadId}/intentos:
     post:
-      tags: [Capitulos]
+      tags:
+      - Capitulos
       summary: Responder una actividad y recibir corrección y XP
-      description:
-        Registra un `IntentoActividad`, lo corrige al instante y devuelve la
-        respuesta correcta y la explicación.
+      description: Registra un `IntentoActividad`, lo corrige al instante y devuelve la respuesta correcta
+        y la explicación.
       operationId: responderActividad
       parameters:
-        - $ref: '#/components/parameters/ActividadId'
+      - $ref: '#/components/parameters/ActividadId'
       requestBody:
         required: true
         content:
@@ -307,7 +328,10 @@ paths:
               emparejar:
                 summary: Emparejar u ordenar
                 value:
-                  respuesta: [apple-manzana, dog-perro, house-casa]
+                  respuesta:
+                  - apple-manzana
+                  - dog-perro
+                  - house-casa
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/NuevoIntentoPronunciacion'
@@ -344,16 +368,15 @@ paths:
               example:
                 codigo: SERVICIO_VOZ_NO_DISPONIBLE
                 mensaje: No pudimos calificar tu pronunciación. Intenta de nuevo.
-
-/actividades/{actividadId}/pista:
+  /actividades/{actividadId}/pista:
     post:
-      tags: [Capitulos]
+      tags:
+      - Capitulos
       summary: Pedir una pista (descuenta monedas)
-      description:
-        Descuenta `costoPista` monedas y devuelve la pista.
+      description: Descuenta `costoPista` monedas y devuelve la pista.
       operationId: pedirPista
       parameters:
-        - $ref: '#/components/parameters/ActividadId'
+      - $ref: '#/components/parameters/ActividadId'
       responses:
         '200':
           description: Pista entregada.
@@ -379,15 +402,547 @@ paths:
                     codigo: SALDO_INSUFICIENTE
                     mensaje: No tienes monedas suficientes para esta pista.
                     detalles:
-                      - campo: monedas
-                        mensaje: Tienes 2 monedas y la pista cuesta 5.
+                    - campo: monedas
+                      mensaje: Tienes 2 monedas y la pista cuesta 5.
                 noIniciado:
                   value:
                     codigo: CAPITULO_NO_INICIADO
                     mensaje: Inicia el capítulo antes de pedir pistas.
+  /storylines:
+    get:
+      tags:
+      - Storylines
+      summary: Ver el catálogo de storylines
+      description: 'Lista las storylines **publicadas** con su nivel y tema (RF-05, RN-09).
 
+        Si el estudiante ya hizo la prueba de nivel, las storylines de su nivel
+
+        aparecen primero y llevan `recomendada: true` (RN-06); las demás siguen
+
+        disponibles, nada se bloquea por nivel.
+
+        '
+      operationId: listarStorylines
+      parameters:
+      - name: nivelMCER
+        in: query
+        required: false
+        description: Filtra por nivel recomendado de la storyline.
+        schema:
+          $ref: '#/components/schemas/NivelMCER'
+      - name: tema
+        in: query
+        required: false
+        description: Filtra por tema (por ejemplo, `Ingeniería`).
+        schema:
+          type: string
+          example: Ingeniería
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/Limite'
+      responses:
+        '200':
+          description: Catálogo de storylines publicadas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaStorylines'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+  /storylines/{storylineId}:
+    get:
+      tags:
+      - Storylines
+      summary: Ver una storyline
+      description: 'Devuelve la storyline con sus personajes y sus capítulos en orden. Cada
+
+        capítulo trae el estado del estudiante (`bloqueado`, `disponible`,
+
+        `en_curso` o `completado`) y sus estrellas (RF-06, RN-01, RN-02).
+
+        Las escenas y actividades no vienen aquí: se obtienen al abrir un
+
+        capítulo. Una storyline sin publicar responde 404 (RN-09).
+
+        '
+      operationId: obtenerStoryline
+      parameters:
+      - $ref: '#/components/parameters/StorylineId'
+      responses:
+        '200':
+          description: Storyline con sus capítulos y el estado del estudiante en cada uno.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Storyline'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+  /admin/storylines:
+    post:
+      tags:
+      - Contenido
+      summary: Cargar una storyline completa
+      description: "Solo el administrador de contenido (RF-30). Crea en una sola petición la\nstoryline\
+        \ con sus personajes, capítulos, escenas y actividades. Queda\ncomo borrador (`publicada: false`)\
+        \ hasta que se publique con\n`PATCH /admin/storylines/{storylineId}`.\n\n- Los capítulos se numeran\
+        \ desde 1 y las escenas se ordenan con `orden`.\n- En las escenas de diálogo, `personaje` es el\
+        \ nombre de quien habla y debe\n  existir en la propia storyline.\n- `respuestaCorrecta`, `explicacion`\
+        \ y `pista` solo se envían aquí; la API\n  nunca los devuelve al cargar el contenido.\n"
+      operationId: crearStoryline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Storyline'
+            example:
+              titulo: Tu primer día como ingeniero
+              tema: Ingeniería
+              nivelMCER: A2
+              descripcion: Conoce a tu equipo, entiende tus primeras tareas y sobrevive a tu primera reunión
+                en inglés.
+              portadaUrl: https://cdn.linguarena.app/portadas/primer-dia.png
+              personajes:
+              - nombre: Maya
+                descripcion: Tu mentora, ingeniera de software senior.
+                avatarUrl: https://cdn.linguarena.app/avatares/maya.png
+              - nombre: Leo
+                descripcion: Compañero de equipo, siempre con prisa.
+              capitulos:
+              - numero: 1
+                titulo: Welcome to the team
+                puntajeMinimo: 60
+                escenas:
+                - orden: 1
+                  tipo: narracion
+                  texto: It is your first morning at the office. A woman waves at you from her desk.
+                  imagenUrl: https://cdn.linguarena.app/escenas/oficina.png
+                - orden: 2
+                  tipo: dialogo
+                  texto: 'Maya: Hi! I''m Maya. Your first deadline is on Friday.'
+                  personaje: Maya
+                  audioUrl: https://cdn.linguarena.app/audios/c1e2.mp3
+                  actividades:
+                  - tipo: vocabulario
+                    enunciado: What does 'deadline' mean?
+                    opciones:
+                    - clave: a
+                      texto: fecha límite
+                    - clave: b
+                      texto: reunión
+                    - clave: c
+                      texto: vacaciones
+                    - clave: d
+                      texto: sueldo
+                    respuestaCorrecta: a
+                    explicacion: '''Deadline'' es la fecha o la hora máxima para entregar algo.'
+                    pista: Piensa en la palabra "plazo".
+                    costoPista: 5
+                    xp: 10
+      responses:
+        '201':
+          description: Storyline creada como borrador.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Storyline'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+  /admin/storylines/{storylineId}:
+    patch:
+      tags:
+      - Contenido
+      summary: Editar o publicar una storyline
+      description: 'Solo el administrador de contenido (RF-30). Actualiza los datos
+
+        generales enviados y permite publicar o despublicar con `publicada`.
+
+        Para publicar, la storyline debe tener al menos un capítulo y cada
+
+        capítulo al menos una escena; si no, responde 409. Al publicarla
+
+        aparece en el catálogo (RN-09), y su capítulo 1 queda disponible para
+
+        todos los estudiantes (RN-02).
+
+        '
+      operationId: actualizarStoryline
+      parameters:
+      - $ref: '#/components/parameters/StorylineId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarStorylineRequest'
+            example:
+              publicada: true
+      responses:
+        '200':
+          description: Storyline actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Storyline'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+  /pruebas-nivel:
+    post:
+      tags:
+      - Nivelación
+      summary: Iniciar la prueba de nivel
+      description: 'Crea una prueba de nivel para el estudiante y devuelve sus preguntas, sin
+
+        las respuestas correctas (RF-04). Se hace al registrarse (RN-06). Si el
+
+        estudiante ya tiene una prueba en curso, devuelve esa misma con 200 en
+
+        lugar de crear otra.
+
+        '
+      operationId: iniciarPruebaNivel
+      responses:
+        '201':
+          description: Prueba creada, con sus preguntas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PruebaNivel'
+        '200':
+          description: Ya había una prueba en curso; se devuelve la misma.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PruebaNivel'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+  /pruebas-nivel/{pruebaId}/respuestas:
+    post:
+      tags:
+      - Nivelación
+      summary: Enviar las respuestas y recibir el nivel
+      description: 'Califica la prueba y asigna al estudiante un nivel entre A1 y C2 (RF-04).
+
+        El nivel queda guardado en su perfil (`nivelMCER`) y la respuesta incluye
+
+        las storylines recomendadas para ese nivel, sin bloquear las demás
+
+        (RN-06). Las preguntas sin respuesta cuentan como incorrectas. Una prueba
+
+        solo se puede enviar una vez.
+
+        '
+      operationId: enviarRespuestasPruebaNivel
+      parameters:
+      - $ref: '#/components/parameters/PruebaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RespuestasPruebaNivelRequest'
+            example:
+              respuestas:
+              - preguntaId: 6f1d3c0e-2b7a-4c55-9a3e-0d9c1f6b8a11
+                respuesta: a
+              - preguntaId: 0b8e5a47-91c2-4f0b-8f7d-3a2e6c4d5b22
+                respuesta: She works in a hospital.
+      responses:
+        '200':
+          description: Prueba calificada, con el nivel asignado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PruebaNivel'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+  /grupos:
+    post:
+      tags:
+      - Grupos
+      summary: Crear un grupo
+      description: 'Solo el docente (RF-25). Crea un grupo de clase y genera su `codigoInvitacion`,
+
+        que el docente comparte con sus estudiantes. El grupo pertenece al docente
+
+        que lo crea (RN-07).
+
+        '
+      operationId: crearGrupo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearGrupoRequest'
+            example:
+              nombre: Inglés Técnico
+              seccion: Sección 1101
+      responses:
+        '201':
+          description: Grupo creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grupo'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+    get:
+      tags:
+      - Grupos
+      summary: Listar mis grupos
+      description: 'Devuelve los grupos del usuario autenticado (RF-25, RF-26). Si es docente, los
+
+        grupos que creó; si es estudiante, los grupos a los que se unió (RN-07).
+
+        El `codigoInvitacion` solo se incluye para el docente dueño del grupo.
+
+        '
+      operationId: listarMisGrupos
+      parameters:
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/Limite'
+      responses:
+        '200':
+          description: Grupos del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaGrupos'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+  /grupos/unirse:
+    post:
+      tags:
+      - Grupos
+      summary: Unirse a un grupo con un código
+      description: 'Solo el estudiante (RF-26). Lo agrega al grupo que tiene ese código de invitación.
+
+        Un estudiante puede estar en varios grupos (RN-07).
+
+        '
+      operationId: unirseAGrupo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnirseGrupoRequest'
+            example:
+              codigoInvitacion: K7QM2X
+      responses:
+        '201':
+          description: El estudiante quedó unido al grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grupo'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          description: Ningún grupo tiene ese código.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                codigo: CODIGO_INVALIDO
+                mensaje: El código de invitación no existe.
+        '409':
+          description: El estudiante ya es miembro del grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                codigo: YA_ES_MIEMBRO
+                mensaje: Ya perteneces a este grupo.
+  /grupos/{grupoId}/asignaciones:
+    post:
+      tags:
+      - Grupos
+      summary: Asignar un capítulo a un grupo con fecha límite
+      description: 'Solo el docente dueño del grupo (RF-27). El capítulo debe existir y pertenecer a
+
+        una storyline publicada (RN-09); el docente asigna capítulos que ya existen.
+
+        La `fechaLimite` debe ser futura. No se puede asignar dos veces el mismo
+
+        capítulo al mismo grupo.
+
+        '
+      operationId: asignarCapitulo
+      parameters:
+      - $ref: '#/components/parameters/GrupoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearAsignacionRequest'
+            example:
+              capituloId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              fechaLimite: '2026-12-05T23:59:00-06:00'
+      responses:
+        '201':
+          description: Capítulo asignado al grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asignacion'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: Ese capítulo ya está asignado a este grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                codigo: ASIGNACION_DUPLICADA
+                mensaje: Este capítulo ya fue asignado al grupo.
+    get:
+      tags:
+      - Grupos
+      summary: Ver las asignaciones de un grupo
+      description: 'Lista las asignaciones del grupo, de la fecha límite más próxima a la más lejana
+
+        (RF-27). Pueden verla el docente dueño y los estudiantes del grupo (RN-07,
+
+        RN-08).
+
+        '
+      operationId: listarAsignaciones
+      parameters:
+      - $ref: '#/components/parameters/GrupoId'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/Limite'
+      responses:
+        '200':
+          description: Asignaciones del grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaAsignaciones'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+  /grupos/{grupoId}/progreso:
+    get:
+      tags:
+      - Grupos
+      summary: Ver el progreso del grupo
+      description: 'Solo el docente dueño del grupo (RF-28, RN-08). Devuelve el avance agregado por
+
+        asignación y el avance de cada estudiante del grupo. La lista de
+
+        `estudiantes` va paginada.
+
+        '
+      operationId: obtenerProgresoGrupo
+      parameters:
+      - $ref: '#/components/parameters/GrupoId'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/Limite'
+      responses:
+        '200':
+          description: Progreso del grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgresoGrupo'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+  /grupos/{grupoId}/estudiantes/{estudianteId}/progreso:
+    get:
+      tags:
+      - Grupos
+      summary: Ver el progreso de un estudiante del grupo
+      description: 'Solo el docente dueño del grupo (RF-28, RN-08). Devuelve el avance del estudiante
+
+        en cada asignación del grupo. Responde 404 si el estudiante no pertenece al
+
+        grupo.
+
+        '
+      operationId: obtenerProgresoEstudiante
+      parameters:
+      - $ref: '#/components/parameters/GrupoId'
+      - $ref: '#/components/parameters/EstudianteId'
+      responses:
+        '200':
+          description: Progreso del estudiante dentro del grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgresoEstudianteGrupo'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
 components:
-  parameters: 
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
     Pagina:
       name: pagina
       in: query
@@ -426,7 +981,34 @@ components:
       schema:
         type: string
         format: uuid
-
+    StorylineId:
+      name: storylineId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PruebaId:
+      name: pruebaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    GrupoId:
+      name: grupoId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    EstudianteId:
+      name: estudianteId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
     NoEncontrado:
       description: El recurso no existe.
@@ -447,8 +1029,8 @@ components:
             codigo: VALIDACION
             mensaje: Uno o más campos son inválidos.
             detalles:
-              - campo: respuesta
-                mensaje: Es obligatorio.
+            - campo: respuesta
+              mensaje: Es obligatorio.
     NoAutenticado:
       description: Falta el token, es inválido o expiró.
       content:
@@ -482,11 +1064,30 @@ components:
               value:
                 codigo: ROL_NO_PERMITIDO
                 mensaje: Solo los estudiantes pueden jugar capítulos.
+    Prohibido:
+      description: El usuario no tiene permiso para esta operación (rol incorrecto o recurso ajeno).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: PROHIBIDO
+            mensaje: No tienes permiso para realizar esta operación.
+    Conflicto:
+      description: La operación choca con el estado actual del recurso.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: CONFLICTO
+            mensaje: La storyline no se puede publicar porque tiene capítulos sin escenas.
   schemas:
-
     Error:
       type: object
-      required: [codigo, mensaje]
+      required:
+      - codigo
+      - mensaje
       properties:
         codigo:
           type: string
@@ -503,10 +1104,13 @@ components:
                 type: string
               mensaje:
                 type: string
-
     Paginacion:
       type: object
-      required: [pagina, limite, total, totalPaginas]
+      required:
+      - pagina
+      - limite
+      - total
+      - totalPaginas
       properties:
         pagina:
           type: integer
@@ -520,19 +1124,29 @@ components:
         totalPaginas:
           type: integer
           example: 3
-
     Rol:
       type: string
-      enum: [estudiante, docente, administrador]
-
+      enum:
+      - estudiante
+      - docente
+      - administrador
     NivelMCER:
       type: string
       description: Nivel del Marco Común Europeo de Referencia.
-      enum: [A1, A2, B1, B2, C1, C2]     
-
+      enum:
+      - A1
+      - A2
+      - B1
+      - B2
+      - C1
+      - C2
     RegistroRequest:
       type: object
-      required: [nombre, correo, contrasena, rol]
+      required:
+      - nombre
+      - correo
+      - contrasena
+      - rol
       properties:
         nombre:
           type: string
@@ -550,16 +1164,19 @@ components:
         rol:
           type: string
           description: El rol `administrador` no se puede elegir al registrarse.
-          enum: [estudiante, docente]
+          enum:
+          - estudiante
+          - docente
           default: estudiante
         institucion:
           type: string
           description: Solo para docentes.
           example: UNITEC
-
     LoginRequest:
       type: object
-      required: [correo, contrasena]
+      required:
+      - correo
+      - contrasena
       properties:
         correo:
           type: string
@@ -567,17 +1184,20 @@ components:
         contrasena:
           type: string
           format: password
-
     RefreshRequest:
       type: object
-      required: [refreshToken]
+      required:
+      - refreshToken
       properties:
         refreshToken:
           type: string
-
     Tokens:
       type: object
-      required: [accessToken, refreshToken, tipo, expiraEn]
+      required:
+      - accessToken
+      - refreshToken
+      - tipo
+      - expiraEn
       properties:
         accessToken:
           type: string
@@ -590,28 +1210,33 @@ components:
           type: integer
           description: Segundos hasta que expira el token de acceso.
           example: 3600
-
     AuthResponse:
       type: object
-      required: [usuario, tokens]
+      required:
+      - usuario
+      - tokens
       properties:
         usuario:
           $ref: '#/components/schemas/PerfilUsuario'
         tokens:
           $ref: '#/components/schemas/Tokens'
-
     TipoNotificacion:
       type: string
       enum:
-        - racha_en_riesgo
-        - asignacion_nueva
-        - asignacion_por_vencer
-        - capitulo_desbloqueado
-        - insignia_obtenida
+      - racha_en_riesgo
+      - asignacion_nueva
+      - asignacion_por_vencer
+      - capitulo_desbloqueado
+      - insignia_obtenida
     Usuario:
       type: object
       description: Clase base abstracta. Nunca se devuelve sola; siempre como Estudiante, Docente o Administrador.
-      required: [id, nombre, correo, rol, fechaRegistro]
+      required:
+      - id
+      - nombre
+      - correo
+      - rol
+      - fechaRegistro
       properties:
         id:
           type: string
@@ -632,66 +1257,70 @@ components:
         fechaRegistro:
           type: string
           format: date-time
-          
     Estudiante:
       allOf:
-        - $ref: '#/components/schemas/Usuario'
-        - type: object
-          required: [xp, nivelJugador, monedas, rachaActual, mejorRacha, escudos]
-          properties:
-            nivelMCER:
-              allOf:
-                - $ref: '#/components/schemas/NivelMCER'
-              nullable: true
-              description: Nulo hasta completar la prueba de nivel.
-            xp:
-              type: integer
-              minimum: 0
-              example: 1250
-            nivelJugador:
-              type: integer
-              minimum: 1
-              example: 6
-            monedas:
-              type: integer
-              minimum: 0
-              example: 180
-            rachaActual:
-              type: integer
-              minimum: 0
-              example: 4
-            mejorRacha:
-              type: integer
-              minimum: 0
-              example: 12
-            ultimoDiaActivo:
-              type: string
-              format: date
-              nullable: true
-            escudos:
-              type: integer
-              minimum: 0
-              description: Escudos de racha disponibles.
-              example: 1
-
+      - $ref: '#/components/schemas/Usuario'
+      - type: object
+        required:
+        - xp
+        - nivelJugador
+        - monedas
+        - rachaActual
+        - mejorRacha
+        - escudos
+        properties:
+          nivelMCER:
+            allOf:
+            - $ref: '#/components/schemas/NivelMCER'
+            nullable: true
+            description: Nulo hasta completar la prueba de nivel.
+          xp:
+            type: integer
+            minimum: 0
+            example: 1250
+          nivelJugador:
+            type: integer
+            minimum: 1
+            example: 6
+          monedas:
+            type: integer
+            minimum: 0
+            example: 180
+          rachaActual:
+            type: integer
+            minimum: 0
+            example: 4
+          mejorRacha:
+            type: integer
+            minimum: 0
+            example: 12
+          ultimoDiaActivo:
+            type: string
+            format: date
+            nullable: true
+          escudos:
+            type: integer
+            minimum: 0
+            description: Escudos de racha disponibles.
+            example: 1
     Docente:
       allOf:
-        - $ref: '#/components/schemas/Usuario'
-        - type: object
-          properties:
-            institucion:
-              type: string
-              nullable: true
-              example: UNITEC
+      - $ref: '#/components/schemas/Usuario'
+      - type: object
+        properties:
+          institucion:
+            type: string
+            nullable: true
+            example: UNITEC
     Administrador:
       allOf:
-        - $ref: '#/components/schemas/Usuario'
+      - $ref: '#/components/schemas/Usuario'
     PerfilUsuario:
       description: Perfil según el rol del usuario.
       oneOf:
-        - $ref: '#/components/schemas/Estudiante'
-        - $ref: '#/components/schemas/Docente'
-        - $ref: '#/components/schemas/Administrador'
+      - $ref: '#/components/schemas/Estudiante'
+      - $ref: '#/components/schemas/Docente'
+      - $ref: '#/components/schemas/Administrador'
       discriminator:
         propertyName: rol
         mapping:
@@ -713,10 +1342,14 @@ components:
         institucion:
           type: string
           description: Solo para docentes.
-
     Notificacion:
       type: object
-      required: [id, tipo, titulo, leida, creadaEn]
+      required:
+      - id
+      - tipo
+      - titulo
+      - leida
+      - creadaEn
       properties:
         id:
           type: string
@@ -743,7 +1376,10 @@ components:
           format: date-time
     ListaNotificaciones:
       type: object
-      required: [datos, noLeidas, paginacion]
+      required:
+      - datos
+      - noLeidas
+      - paginacion
       properties:
         datos:
           type: array
@@ -756,19 +1392,25 @@ components:
           $ref: '#/components/schemas/Paginacion'
     ActualizarNotificacionRequest:
       type: object
-      required: [leida]
+      required:
+      - leida
       properties:
         leida:
           type: boolean
-
     EstadoCapitulo:
       type: string
-      enum: [bloqueado, disponible, en_curso, completado]
-
+      enum:
+      - bloqueado
+      - disponible
+      - en_curso
+      - completado
     ProgresoCapitulo:
       type: object
       description: Une un Estudiante con un Capitulo.
-      required: [estudianteId, capituloId, estado]
+      required:
+      - estudianteId
+      - capituloId
+      - estado
       properties:
         estudianteId:
           type: string
@@ -782,7 +1424,7 @@ components:
           type: integer
           minimum: 1
           nullable: true
-          description: "`orden` de la escena donde retomar. Nulo si nunca se inició."
+          description: '`orden` de la escena donde retomar. Nulo si nunca se inició.'
           example: 3
         puntaje:
           type: integer
@@ -801,11 +1443,18 @@ components:
           format: date-time
           nullable: true
           description: Primera vez que se aprobó.
-
     IntentoActividad:
       type: object
       description: Une un Estudiante con una Actividad.
-      required: [id, estudianteId, actividadId, respuesta, esCorrecta, usoPista, numeroIntento, fecha]
+      required:
+      - id
+      - estudianteId
+      - actividadId
+      - respuesta
+      - esCorrecta
+      - usoPista
+      - numeroIntento
+      - fecha
       properties:
         id:
           type: string
@@ -830,10 +1479,14 @@ components:
         fecha:
           type: string
           format: date-time
-
     Insignia:
       type: object
-      required: [id, nombre, descripcion, criterio, iconoUrl]
+      required:
+      - id
+      - nombre
+      - descripcion
+      - criterio
+      - iconoUrl
       properties:
         id:
           type: string
@@ -851,11 +1504,13 @@ components:
         iconoUrl:
           type: string
           format: uri
-
     LogroObtenido:
       type: object
       description: Une un Estudiante con una Insignia.
-      required: [estudianteId, insignia, fechaObtencion]
+      required:
+      - estudianteId
+      - insignia
+      - fechaObtencion
       properties:
         estudianteId:
           type: string
@@ -865,10 +1520,11 @@ components:
         fechaObtencion:
           type: string
           format: date-time
-
     ListaLogros:
       type: object
-      required: [datos, paginacion]
+      required:
+      - datos
+      - paginacion
       properties:
         datos:
           type: array
@@ -876,14 +1532,24 @@ components:
             $ref: '#/components/schemas/LogroObtenido'
         paginacion:
           $ref: '#/components/schemas/Paginacion'
-
     TipoActividad:
       type: string
-      enum: [vocabulario, comprension, escucha, escritura]
-
+      enum:
+      - vocabulario
+      - comprension
+      - escucha
+      - escritura
+      - pronunciacion
     CapituloJuego:
       type: object
-      required: [id, storylineId, numero, titulo, puntajeMinimo, escenas, progreso]
+      required:
+      - id
+      - storylineId
+      - numero
+      - titulo
+      - puntajeMinimo
+      - escenas
+      - progreso
       properties:
         id:
           type: string
@@ -909,10 +1575,14 @@ components:
             $ref: '#/components/schemas/EscenaJuego'
         progreso:
           $ref: '#/components/schemas/ProgresoCapitulo'
-
     EscenaJuego:
       type: object
-      required: [id, orden, tipo, texto, actividades]
+      required:
+      - id
+      - orden
+      - tipo
+      - texto
+      - actividades
       properties:
         id:
           type: string
@@ -922,7 +1592,9 @@ components:
           minimum: 1
         tipo:
           type: string
-          enum: [narracion, dialogo]
+          enum:
+          - narracion
+          - dialogo
         texto:
           type: string
         personajeId:
@@ -942,11 +1614,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ActividadJuego'
-
     ActividadJuego:
       type: object
       description: Actividad tal como la ve el estudiante, sin respuestaCorrecta, explicacion ni pista.
-      required: [id, tipo, enunciado, costoPista, xp]
+      required:
+      - id
+      - tipo
+      - enunciado
+      - costoPista
+      - xp
       properties:
         id:
           type: string
@@ -959,10 +1635,13 @@ components:
         opciones:
           type: array
           nullable: true
-          description: Opciones para elegir, emparejar u ordenar. Nulo si la respuesta es texto libre o audio.
+          description: Opciones para elegir, emparejar u ordenar. Nulo si la respuesta es texto libre
+            o audio.
           items:
             type: object
-            required: [clave, texto]
+            required:
+            - clave
+            - texto
             properties:
               clave:
                 type: string
@@ -983,30 +1662,36 @@ components:
           type: integer
           minimum: 0
           example: 10
-
     Respuesta:
-      description: |
-        Texto o clave de opción (`string`) para elegir, escuchar o escribir;
-        lista ordenada (`array`) para emparejar u ordenar.
-      oneOf:
-        - type: string
-          maxLength: 500
-        - type: array
-          minItems: 1
-          items:
-            type: string
+      description: 'Texto o clave de opción (`string`) para elegir, escuchar o escribir;
 
+        lista ordenada (`array`) para emparejar u ordenar.
+
+        '
+      oneOf:
+      - type: string
+        maxLength: 500
+      - type: array
+        minItems: 1
+        items:
+          type: string
     NuevoIntento:
       type: object
-      required: [respuesta]
+      required:
+      - respuesta
       properties:
         respuesta:
           $ref: '#/components/schemas/Respuesta'
-
     EstadoEstudiante:
       type: object
       description: Saldo de gamificación del estudiante después de la operación.
-      required: [xp, nivelJugador, monedas, rachaActual, mejorRacha, escudos]
+      required:
+      - xp
+      - nivelJugador
+      - monedas
+      - rachaActual
+      - mejorRacha
+      - escudos
       properties:
         xp:
           type: integer
@@ -1032,10 +1717,16 @@ components:
           type: integer
           minimum: 0
           example: 1
-
     ResultadoIntento:
       type: object
-      required: [intento, respuestaCorrecta, explicacion, cuentaParaPuntaje, xpGanada, estudiante, escenaActual]
+      required:
+      - intento
+      - respuestaCorrecta
+      - explicacion
+      - cuentaParaPuntaje
+      - xpGanada
+      - estudiante
+      - escenaActual
       properties:
         intento:
           $ref: '#/components/schemas/IntentoActividad'
@@ -1058,10 +1749,14 @@ components:
           type: integer
           description: Escena guardada en el progreso tras este intento.
           example: 3
-
     PistaEntregada:
       type: object
-      required: [actividadId, pista, costo, monedasRestantes, yaPedida]
+      required:
+      - actividadId
+      - pista
+      - costo
+      - monedasRestantes
+      - yaPedida
       properties:
         actividadId:
           type: string
@@ -1080,10 +1775,17 @@ components:
           example: 170
         yaPedida:
           type: boolean
-
     ResultadoFinalizacion:
       type: object
-      required: [progreso, aprobado, puntaje, recompensas, nivelJugador, estudiante, siguienteCapitulo, insigniasNuevas]
+      required:
+      - progreso
+      - aprobado
+      - puntaje
+      - recompensas
+      - nivelJugador
+      - estudiante
+      - siguienteCapitulo
+      - insigniasNuevas
       properties:
         progreso:
           $ref: '#/components/schemas/ProgresoCapitulo'
@@ -1104,7 +1806,9 @@ components:
           example: 2
         recompensas:
           type: object
-          required: [xp, monedas]
+          required:
+          - xp
+          - monedas
           properties:
             xp:
               type: integer
@@ -1116,7 +1820,10 @@ components:
               example: 15
         nivelJugador:
           type: object
-          required: [anterior, actual, subioNivel]
+          required:
+          - anterior
+          - actual
+          - subioNivel
           properties:
             anterior:
               type: integer
@@ -1132,7 +1839,9 @@ components:
           type: object
           nullable: true
           description: Nulo si era el último capítulo de la storyline.
-          required: [capituloId, estado]
+          required:
+          - capituloId
+          - estado
           properties:
             capituloId:
               type: string
@@ -1143,4 +1852,695 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LogroObtenido'
- 
+    NuevoIntentoPronunciacion:
+      type: object
+      required:
+      - audio
+      properties:
+        audio:
+          type: string
+          format: binary
+          description: Grabación del estudiante.
+    TipoEscena:
+      type: string
+      enum:
+      - narracion
+      - dialogo
+    EstadoPruebaNivel:
+      type: string
+      enum:
+      - en_curso
+      - completada
+    Opcion:
+      type: object
+      description: Opción de una actividad. El estudiante responde con la `clave`.
+      required:
+      - clave
+      - texto
+      properties:
+        clave:
+          type: string
+          example: a
+        texto:
+          type: string
+          example: fecha límite
+    Personaje:
+      type: object
+      required:
+      - nombre
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        nombre:
+          type: string
+          description: Único dentro de su storyline; las escenas lo usan para referirse al personaje.
+          maxLength: 60
+          example: Maya
+        descripcion:
+          type: string
+          example: Tu mentora, ingeniera de software senior.
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: https://cdn.linguarena.app/avatares/maya.png
+    Actividad:
+      type: object
+      description: 'Ejercicio ligado a una escena. `respuestaCorrecta`, `explicacion` y
+
+        `pista` son solo de entrada: nunca se devuelven aquí. El estudiante recibe
+
+        la explicación al responder y la pista al pedirla pagando monedas
+
+        (RF-15, RF-16).
+
+        '
+      required:
+      - tipo
+      - enunciado
+      - respuestaCorrecta
+      - xp
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        tipo:
+          $ref: '#/components/schemas/TipoActividad'
+        enunciado:
+          type: string
+          example: What does 'deadline' mean?
+        audioUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Audio a escuchar (actividades de escucha).
+        opciones:
+          type: array
+          nullable: true
+          description: Opciones para elegir, emparejar u ordenar. Nulo en las de texto libre o audio.
+          items:
+            $ref: '#/components/schemas/Opcion'
+        respuestaCorrecta:
+          writeOnly: true
+          description: Clave de la opción correcta, texto esperado o lista ordenada (ver `Respuesta`).
+          allOf:
+          - $ref: '#/components/schemas/Respuesta'
+        explicacion:
+          type: string
+          writeOnly: true
+          example: '''Deadline'' es la fecha o la hora máxima para entregar algo.'
+        pista:
+          type: string
+          writeOnly: true
+          example: Piensa en la palabra "plazo".
+        costoPista:
+          type: integer
+          minimum: 0
+          description: Monedas que cuesta la pista (RN-04).
+          example: 5
+        xp:
+          type: integer
+          minimum: 0
+          description: XP que otorga al responder correctamente.
+          example: 10
+    Escena:
+      type: object
+      description: Momento de un capítulo, de narración o de diálogo, con actividades intercaladas.
+      required:
+      - orden
+      - tipo
+      - texto
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        orden:
+          type: integer
+          minimum: 1
+          description: Posición de la escena dentro del capítulo.
+          example: 2
+        tipo:
+          $ref: '#/components/schemas/TipoEscena'
+        texto:
+          type: string
+          example: 'Maya: Hi! I''m Maya. Your first deadline is on Friday.'
+        imagenUrl:
+          type: string
+          format: uri
+          nullable: true
+        audioUrl:
+          type: string
+          format: uri
+          nullable: true
+        personaje:
+          type: string
+          nullable: true
+          description: 'Nombre del personaje que habla en las escenas de diálogo; debe existir
+
+            en `personajes` de la storyline. Al jugar el capítulo se devuelve como
+
+            `personajeId`.
+
+            '
+          example: Maya
+        actividades:
+          type: array
+          items:
+            $ref: '#/components/schemas/Actividad'
+    Capitulo:
+      type: object
+      description: 'Parte de la historia que se juega en una sesión corta. En el catálogo y
+
+        en la vista de la storyline solo trae el resumen; `escenas` se usa al
+
+        cargar el contenido y se lee con `GET /capitulos/{capituloId}`.
+
+        '
+      required:
+      - numero
+      - titulo
+      - puntajeMinimo
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        numero:
+          type: integer
+          minimum: 1
+          description: Orden del capítulo dentro de la storyline.
+          example: 1
+        titulo:
+          type: string
+          example: Welcome to the team
+        puntajeMinimo:
+          type: integer
+          minimum: 0
+          maximum: 100
+          default: 60
+          description: Porcentaje de aciertos necesario para aprobar el capítulo (RN-01).
+        estado:
+          allOf:
+          - $ref: '#/components/schemas/EstadoCapitulo'
+          readOnly: true
+          description: Estado del estudiante que consulta.
+        estrellas:
+          type: integer
+          minimum: 1
+          maximum: 3
+          nullable: true
+          readOnly: true
+          description: Estrellas obtenidas por el estudiante. Nulo si aún no lo completa.
+        escenas:
+          type: array
+          minItems: 1
+          writeOnly: true
+          items:
+            $ref: '#/components/schemas/Escena'
+    StorylineResumen:
+      type: object
+      required:
+      - id
+      - titulo
+      - tema
+      - nivelMCER
+      - totalCapitulos
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        titulo:
+          type: string
+          example: Tu primer día como ingeniero
+        tema:
+          type: string
+          example: Ingeniería
+        nivelMCER:
+          $ref: '#/components/schemas/NivelMCER'
+        descripcion:
+          type: string
+        portadaUrl:
+          type: string
+          format: uri
+          nullable: true
+        publicada:
+          type: boolean
+          default: false
+          description: Solo las storylines publicadas aparecen en el catálogo (RN-09).
+        totalCapitulos:
+          type: integer
+          readOnly: true
+          example: 8
+        recomendada:
+          type: boolean
+          readOnly: true
+          description: Verdadero si coincide con el nivel del estudiante (RN-06).
+    Storyline:
+      description: Historia completa con sus personajes y capítulos.
+      allOf:
+      - $ref: '#/components/schemas/StorylineResumen'
+      - type: object
+        required:
+        - personajes
+        - capitulos
+        properties:
+          personajes:
+            type: array
+            items:
+              $ref: '#/components/schemas/Personaje'
+          capitulos:
+            type: array
+            minItems: 1
+            items:
+              $ref: '#/components/schemas/Capitulo'
+    ListaStorylines:
+      type: object
+      required:
+      - datos
+      - paginacion
+      properties:
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/StorylineResumen'
+        paginacion:
+          $ref: '#/components/schemas/Paginacion'
+    ActualizarStorylineRequest:
+      type: object
+      minProperties: 1
+      properties:
+        titulo:
+          type: string
+        tema:
+          type: string
+        nivelMCER:
+          $ref: '#/components/schemas/NivelMCER'
+        descripcion:
+          type: string
+        portadaUrl:
+          type: string
+          format: uri
+          nullable: true
+        publicada:
+          type: boolean
+          description: Verdadero para publicar, falso para sacarla del catálogo.
+    PreguntaNivel:
+      type: object
+      description: Pregunta de la prueba de nivel. Nunca incluye la respuesta correcta.
+      required:
+      - id
+      - tipo
+      - enunciado
+      properties:
+        id:
+          type: string
+          format: uuid
+        tipo:
+          $ref: '#/components/schemas/TipoActividad'
+        enunciado:
+          type: string
+          example: Choose the sentence that is correct.
+        contexto:
+          type: string
+          nullable: true
+          description: Texto a leer en las preguntas de comprensión.
+        audioUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Audio a escuchar en las preguntas de escucha.
+        opciones:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/Opcion'
+    PruebaNivel:
+      type: object
+      required:
+      - id
+      - fecha
+      - estado
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        fecha:
+          type: string
+          format: date-time
+          readOnly: true
+        estado:
+          $ref: '#/components/schemas/EstadoPruebaNivel'
+        puntaje:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          readOnly: true
+          description: Porcentaje de aciertos. Nulo mientras la prueba está en curso.
+          example: 72
+        nivelAsignado:
+          allOf:
+          - $ref: '#/components/schemas/NivelMCER'
+          nullable: true
+          readOnly: true
+          description: Nivel A1–C2 asignado. Nulo mientras la prueba está en curso.
+        preguntas:
+          type: array
+          readOnly: true
+          description: Solo se incluyen mientras la prueba está en curso.
+          items:
+            $ref: '#/components/schemas/PreguntaNivel'
+        storylinesRecomendadas:
+          type: array
+          readOnly: true
+          description: Storylines publicadas del nivel asignado. Solo con la prueba completada (RN-06).
+          items:
+            $ref: '#/components/schemas/StorylineResumen'
+    RespuestasPruebaNivelRequest:
+      type: object
+      required:
+      - respuestas
+      properties:
+        respuestas:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+            - preguntaId
+            - respuesta
+            properties:
+              preguntaId:
+                type: string
+                format: uuid
+              respuesta:
+                $ref: '#/components/schemas/Respuesta'
+    CrearGrupoRequest:
+      type: object
+      required:
+      - nombre
+      properties:
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 80
+          example: Inglés Técnico
+        seccion:
+          type: string
+          maxLength: 40
+          example: Sección 1101
+    UnirseGrupoRequest:
+      type: object
+      required:
+      - codigoInvitacion
+      properties:
+        codigoInvitacion:
+          type: string
+          example: K7QM2X
+    CrearAsignacionRequest:
+      type: object
+      required:
+      - capituloId
+      - fechaLimite
+      properties:
+        capituloId:
+          type: string
+          format: uuid
+        fechaLimite:
+          type: string
+          format: date-time
+          description: Debe ser posterior al momento de la petición.
+          example: '2026-12-05T23:59:00-06:00'
+    Grupo:
+      type: object
+      description: Sección de clase de un docente (RN-07).
+      required:
+      - id
+      - nombre
+      - docenteId
+      - totalEstudiantes
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        nombre:
+          type: string
+          example: Inglés Técnico
+        seccion:
+          type: string
+          nullable: true
+          example: Sección 1101
+        codigoInvitacion:
+          type: string
+          readOnly: true
+          description: Solo lo ve el docente dueño del grupo; para los estudiantes se omite.
+          example: K7QM2X
+        docenteId:
+          type: string
+          format: uuid
+          readOnly: true
+        totalEstudiantes:
+          type: integer
+          minimum: 0
+          readOnly: true
+          example: 28
+    ListaGrupos:
+      type: object
+      required:
+      - datos
+      - paginacion
+      properties:
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Grupo'
+        paginacion:
+          $ref: '#/components/schemas/Paginacion'
+    Asignacion:
+      type: object
+      description: Une un Grupo con un Capitulo, con una fecha límite.
+      required:
+      - id
+      - grupoId
+      - capituloId
+      - fechaLimite
+      - fechaCreacion
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        grupoId:
+          type: string
+          format: uuid
+          readOnly: true
+        capituloId:
+          type: string
+          format: uuid
+        fechaLimite:
+          type: string
+          format: date-time
+        fechaCreacion:
+          type: string
+          format: date-time
+          readOnly: true
+        capitulo:
+          type: object
+          readOnly: true
+          description: Resumen del capítulo asignado.
+          required:
+          - storylineId
+          - storylineTitulo
+          - numero
+          - titulo
+          properties:
+            storylineId:
+              type: string
+              format: uuid
+            storylineTitulo:
+              type: string
+              example: Tu primer día como ingeniero
+            numero:
+              type: integer
+              minimum: 1
+              example: 2
+            titulo:
+              type: string
+              example: La estación de tren
+    ListaAsignaciones:
+      type: object
+      required:
+      - datos
+      - paginacion
+      properties:
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Asignacion'
+        paginacion:
+          $ref: '#/components/schemas/Paginacion'
+    AvanceAsignacion:
+      type: object
+      description: Avance de un estudiante en una asignación (sale de su ProgresoCapitulo).
+      required:
+      - asignacionId
+      - capituloId
+      - titulo
+      - fechaLimite
+      - estado
+      properties:
+        asignacionId:
+          type: string
+          format: uuid
+        capituloId:
+          type: string
+          format: uuid
+        titulo:
+          type: string
+          example: La estación de tren
+        fechaLimite:
+          type: string
+          format: date-time
+        estado:
+          $ref: '#/components/schemas/EstadoCapitulo'
+        puntaje:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Mejor puntaje del estudiante. Nulo si nunca lo finalizó.
+        estrellas:
+          type: integer
+          minimum: 1
+          maximum: 3
+          nullable: true
+        completadoEn:
+          type: string
+          format: date-time
+          nullable: true
+          description: Primera vez que se aprobó.
+        aTiempo:
+          type: boolean
+          nullable: true
+          description: Verdadero si lo aprobó antes de la fecha límite. Nulo si aún no lo aprueba.
+    ProgresoEstudianteGrupo:
+      type: object
+      description: Avance de un estudiante en las asignaciones de un grupo.
+      required:
+      - estudianteId
+      - nombre
+      - nivelJugador
+      - rachaActual
+      - capitulosCompletados
+      - asignaciones
+      properties:
+        estudianteId:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+          example: Ana López
+        nivelMCER:
+          allOf:
+          - $ref: '#/components/schemas/NivelMCER'
+          nullable: true
+        nivelJugador:
+          type: integer
+          minimum: 1
+          example: 6
+        rachaActual:
+          type: integer
+          minimum: 0
+          example: 4
+        ultimoDiaActivo:
+          type: string
+          format: date
+          nullable: true
+        capitulosCompletados:
+          type: integer
+          minimum: 0
+          description: Capítulos aprobados en total, no solo los asignados.
+          example: 9
+        asignaciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvanceAsignacion'
+    ProgresoGrupo:
+      type: object
+      description: Progreso del grupo para el docente (RF-28).
+      required:
+      - grupoId
+      - totalEstudiantes
+      - asignaciones
+      - estudiantes
+      - paginacion
+      properties:
+        grupoId:
+          type: string
+          format: uuid
+        totalEstudiantes:
+          type: integer
+          minimum: 0
+          example: 28
+        asignaciones:
+          type: array
+          description: Resumen del grupo por cada asignación.
+          items:
+            type: object
+            required:
+            - asignacionId
+            - capituloId
+            - titulo
+            - fechaLimite
+            - completaron
+            - enCurso
+            - sinIniciar
+            - porcentajeCompletado
+            properties:
+              asignacionId:
+                type: string
+                format: uuid
+              capituloId:
+                type: string
+                format: uuid
+              titulo:
+                type: string
+                example: La estación de tren
+              fechaLimite:
+                type: string
+                format: date-time
+              completaron:
+                type: integer
+                minimum: 0
+                example: 18
+              enCurso:
+                type: integer
+                minimum: 0
+                example: 6
+              sinIniciar:
+                type: integer
+                minimum: 0
+                example: 4
+              porcentajeCompletado:
+                type: integer
+                minimum: 0
+                maximum: 100
+                example: 64
+              puntajePromedio:
+                type: number
+                nullable: true
+                description: Promedio del mejor puntaje de quienes la completaron. Nulo si nadie la completó.
+                example: 78.5
+        estudiantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgresoEstudianteGrupo'
+        paginacion:
+          $ref: '#/components/schemas/Paginacion'
