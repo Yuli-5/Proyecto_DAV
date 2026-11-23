@@ -27,6 +27,8 @@ tags:
   description: Catálogo de storylines y sus capítulos.
 - name: Contenido
   description: Carga y publicación de contenido (administrador).
+- name: Grupos
+description: Grupos de clase, codigos de invitacion, asignaciones y progreso para el docente.
 paths:
   /auth/registro:
     post:
@@ -681,6 +683,259 @@ paths:
           $ref: '#/components/responses/NoEncontrado'
         '409':
           $ref: '#/components/responses/Conflicto'
+  /grupos:
+    post:
+      tags:
+      - Grupos
+      summary: Crear un grupo
+      description: 'Solo el docente (RF-25). Crea un grupo de clase y genera su `codigoInvitacion`,
+
+        que el docente comparte con sus estudiantes. El grupo pertenece al docente
+
+        que lo crea (RN-07).
+
+        '
+      operationId: crearGrupo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearGrupoRequest'
+            example:
+              nombre: Inglés Técnico
+              seccion: Sección 1101
+      responses:
+        '201':
+          description: Grupo creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grupo'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+    get:
+      tags:
+      - Grupos
+      summary: Listar mis grupos
+      description: 'Devuelve los grupos del usuario autenticado (RF-25, RF-26). Si es docente, los
+
+        grupos que creó; si es estudiante, los grupos a los que se unió (RN-07).
+
+        El `codigoInvitacion` solo se incluye para el docente dueño del grupo.
+
+        '
+      operationId: listarMisGrupos
+      parameters:
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/Limite'
+      responses:
+        '200':
+          description: Grupos del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaGrupos'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+  /grupos/unirse:
+    post:
+      tags:
+      - Grupos
+      summary: Unirse a un grupo con un código
+      description: 'Solo el estudiante (RF-26). Lo agrega al grupo que tiene ese código de invitación.
+
+        Un estudiante puede estar en varios grupos (RN-07).
+
+        '
+      operationId: unirseAGrupo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnirseGrupoRequest'
+            example:
+              codigoInvitacion: K7QM2X
+      responses:
+        '201':
+          description: El estudiante quedó unido al grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grupo'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          description: Ningún grupo tiene ese código.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                codigo: CODIGO_INVALIDO
+                mensaje: El código de invitación no existe.
+        '409':
+          description: El estudiante ya es miembro del grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                codigo: YA_ES_MIEMBRO
+                mensaje: Ya perteneces a este grupo.
+  /grupos/{grupoId}/asignaciones:
+    post:
+      tags:
+      - Grupos
+      summary: Asignar un capítulo a un grupo con fecha límite
+      description: 'Solo el docente dueño del grupo (RF-27). El capítulo debe existir y pertenecer a
+
+        una storyline publicada (RN-09); el docente asigna capítulos que ya existen.
+
+        La `fechaLimite` debe ser futura. No se puede asignar dos veces el mismo
+
+        capítulo al mismo grupo.
+
+        '
+      operationId: asignarCapitulo
+      parameters:
+      - $ref: '#/components/parameters/GrupoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearAsignacionRequest'
+            example:
+              capituloId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              fechaLimite: '2026-12-05T23:59:00-06:00'
+      responses:
+        '201':
+          description: Capítulo asignado al grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asignacion'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: Ese capítulo ya está asignado a este grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                codigo: ASIGNACION_DUPLICADA
+                mensaje: Este capítulo ya fue asignado al grupo.
+    get:
+      tags:
+      - Grupos
+      summary: Ver las asignaciones de un grupo
+      description: 'Lista las asignaciones del grupo, de la fecha límite más próxima a la más lejana
+
+        (RF-27). Pueden verla el docente dueño y los estudiantes del grupo (RN-07,
+
+        RN-08).
+
+        '
+      operationId: listarAsignaciones
+      parameters:
+      - $ref: '#/components/parameters/GrupoId'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/Limite'
+      responses:
+        '200':
+          description: Asignaciones del grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaAsignaciones'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+  /grupos/{grupoId}/progreso:
+    get:
+      tags:
+      - Grupos
+      summary: Ver el progreso del grupo
+      description: 'Solo el docente dueño del grupo (RF-28, RN-08). Devuelve el avance agregado por
+
+        asignación y el avance de cada estudiante del grupo. La lista de
+
+        `estudiantes` va paginada.
+
+        '
+      operationId: obtenerProgresoGrupo
+      parameters:
+      - $ref: '#/components/parameters/GrupoId'
+      - $ref: '#/components/parameters/Pagina'
+      - $ref: '#/components/parameters/Limite'
+      responses:
+        '200':
+          description: Progreso del grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgresoGrupo'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+  /grupos/{grupoId}/estudiantes/{estudianteId}/progreso:
+    get:
+      tags:
+      - Grupos
+      summary: Ver el progreso de un estudiante del grupo
+      description: 'Solo el docente dueño del grupo (RF-28, RN-08). Devuelve el avance del estudiante
+
+        en cada asignación del grupo. Responde 404 si el estudiante no pertenece al
+
+        grupo.
+
+        '
+      operationId: obtenerProgresoEstudiante
+      parameters:
+      - $ref: '#/components/parameters/GrupoId'
+      - $ref: '#/components/parameters/EstudianteId'
+      responses:
+        '200':
+          description: Progreso del estudiante dentro del grupo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgresoEstudianteGrupo'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/Prohibido'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
 components:
   securitySchemes:
     bearerAuth:
@@ -735,6 +990,20 @@ components:
         format: uuid
     PruebaId:
       name: pruebaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    GrupoId:
+      name: grupoId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    EstudianteId:
+      name: estudianteId
       in: path
       required: true
       schema:
@@ -1972,3 +2241,306 @@ components:
                 format: uuid
               respuesta:
                 $ref: '#/components/schemas/Respuesta'
+    CrearGrupoRequest:
+      type: object
+      required:
+      - nombre
+      properties:
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 80
+          example: Inglés Técnico
+        seccion:
+          type: string
+          maxLength: 40
+          example: Sección 1101
+    UnirseGrupoRequest:
+      type: object
+      required:
+      - codigoInvitacion
+      properties:
+        codigoInvitacion:
+          type: string
+          example: K7QM2X
+    CrearAsignacionRequest:
+      type: object
+      required:
+      - capituloId
+      - fechaLimite
+      properties:
+        capituloId:
+          type: string
+          format: uuid
+        fechaLimite:
+          type: string
+          format: date-time
+          description: Debe ser posterior al momento de la petición.
+          example: '2026-12-05T23:59:00-06:00'
+    Grupo:
+      type: object
+      description: Sección de clase de un docente (RN-07).
+      required:
+      - id
+      - nombre
+      - docenteId
+      - totalEstudiantes
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        nombre:
+          type: string
+          example: Inglés Técnico
+        seccion:
+          type: string
+          nullable: true
+          example: Sección 1101
+        codigoInvitacion:
+          type: string
+          readOnly: true
+          description: Solo lo ve el docente dueño del grupo; para los estudiantes se omite.
+          example: K7QM2X
+        docenteId:
+          type: string
+          format: uuid
+          readOnly: true
+        totalEstudiantes:
+          type: integer
+          minimum: 0
+          readOnly: true
+          example: 28
+    ListaGrupos:
+      type: object
+      required:
+      - datos
+      - paginacion
+      properties:
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Grupo'
+        paginacion:
+          $ref: '#/components/schemas/Paginacion'
+    Asignacion:
+      type: object
+      description: Une un Grupo con un Capitulo, con una fecha límite.
+      required:
+      - id
+      - grupoId
+      - capituloId
+      - fechaLimite
+      - fechaCreacion
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        grupoId:
+          type: string
+          format: uuid
+          readOnly: true
+        capituloId:
+          type: string
+          format: uuid
+        fechaLimite:
+          type: string
+          format: date-time
+        fechaCreacion:
+          type: string
+          format: date-time
+          readOnly: true
+        capitulo:
+          type: object
+          readOnly: true
+          description: Resumen del capítulo asignado.
+          required:
+          - storylineId
+          - storylineTitulo
+          - numero
+          - titulo
+          properties:
+            storylineId:
+              type: string
+              format: uuid
+            storylineTitulo:
+              type: string
+              example: Tu primer día como ingeniero
+            numero:
+              type: integer
+              minimum: 1
+              example: 2
+            titulo:
+              type: string
+              example: La estación de tren
+    ListaAsignaciones:
+      type: object
+      required:
+      - datos
+      - paginacion
+      properties:
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Asignacion'
+        paginacion:
+          $ref: '#/components/schemas/Paginacion'
+    AvanceAsignacion:
+      type: object
+      description: Avance de un estudiante en una asignación (sale de su ProgresoCapitulo).
+      required:
+      - asignacionId
+      - capituloId
+      - titulo
+      - fechaLimite
+      - estado
+      properties:
+        asignacionId:
+          type: string
+          format: uuid
+        capituloId:
+          type: string
+          format: uuid
+        titulo:
+          type: string
+          example: La estación de tren
+        fechaLimite:
+          type: string
+          format: date-time
+        estado:
+          $ref: '#/components/schemas/EstadoCapitulo'
+        puntaje:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Mejor puntaje del estudiante. Nulo si nunca lo finalizó.
+        estrellas:
+          type: integer
+          minimum: 1
+          maximum: 3
+          nullable: true
+        completadoEn:
+          type: string
+          format: date-time
+          nullable: true
+          description: Primera vez que se aprobó.
+        aTiempo:
+          type: boolean
+          nullable: true
+          description: Verdadero si lo aprobó antes de la fecha límite. Nulo si aún no lo aprueba.
+    ProgresoEstudianteGrupo:
+      type: object
+      description: Avance de un estudiante en las asignaciones de un grupo.
+      required:
+      - estudianteId
+      - nombre
+      - nivelJugador
+      - rachaActual
+      - capitulosCompletados
+      - asignaciones
+      properties:
+        estudianteId:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+          example: Ana López
+        nivelMCER:
+          allOf:
+          - $ref: '#/components/schemas/NivelMCER'
+          nullable: true
+        nivelJugador:
+          type: integer
+          minimum: 1
+          example: 6
+        rachaActual:
+          type: integer
+          minimum: 0
+          example: 4
+        ultimoDiaActivo:
+          type: string
+          format: date
+          nullable: true
+        capitulosCompletados:
+          type: integer
+          minimum: 0
+          description: Capítulos aprobados en total, no solo los asignados.
+          example: 9
+        asignaciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvanceAsignacion'
+    ProgresoGrupo:
+      type: object
+      description: Progreso del grupo para el docente (RF-28).
+      required:
+      - grupoId
+      - totalEstudiantes
+      - asignaciones
+      - estudiantes
+      - paginacion
+      properties:
+        grupoId:
+          type: string
+          format: uuid
+        totalEstudiantes:
+          type: integer
+          minimum: 0
+          example: 28
+        asignaciones:
+          type: array
+          description: Resumen del grupo por cada asignación.
+          items:
+            type: object
+            required:
+            - asignacionId
+            - capituloId
+            - titulo
+            - fechaLimite
+            - completaron
+            - enCurso
+            - sinIniciar
+            - porcentajeCompletado
+            properties:
+              asignacionId:
+                type: string
+                format: uuid
+              capituloId:
+                type: string
+                format: uuid
+              titulo:
+                type: string
+                example: La estación de tren
+              fechaLimite:
+                type: string
+                format: date-time
+              completaron:
+                type: integer
+                minimum: 0
+                example: 18
+              enCurso:
+                type: integer
+                minimum: 0
+                example: 6
+              sinIniciar:
+                type: integer
+                minimum: 0
+                example: 4
+              porcentajeCompletado:
+                type: integer
+                minimum: 0
+                maximum: 100
+                example: 64
+              puntajePromedio:
+                type: number
+                nullable: true
+                description: Promedio del mejor puntaje de quienes la completaron. Nulo si nadie la completó.
+                example: 78.5
+        estudiantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgresoEstudianteGrupo'
+        paginacion:
+          $ref: '#/components/schemas/Paginacion'
